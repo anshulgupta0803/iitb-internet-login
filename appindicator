@@ -143,46 +143,48 @@ class Preferences(Gtk.Window):
 
     grid = Gtk.Grid()
     
-    usernameLabel = Gtk.Label("Username")
-    passwordLabel = Gtk.Label("Password")
-    themeLabel = Gtk.Label("Theme")
+    self.usernameLabel = Gtk.Label("Username")
+    self.passwordLabel = Gtk.Label("Password")
+    self.themeLabel = Gtk.Label("Theme")
 
-    usernameEntry = Gtk.Entry()
-    passwordEntry = Gtk.Entry()
+    self.usernameEntry = Gtk.Entry()
+    self.passwordEntry = Gtk.Entry()
+    self.passwordEntry.visibility = False
     
-    lightRadioButton = Gtk.RadioButton.new_with_label_from_widget(None, "Light")
-    lightRadioButton.connect("toggled", self.on_button_toggled, "light")
-    darkRadioButton = Gtk.RadioButton.new_with_label_from_widget(lightRadioButton, "Dark")
-    darkRadioButton.connect("toggled", self.on_button_toggled, "dark")
+    self.lightRadioButton = Gtk.RadioButton.new_with_label_from_widget(None, "Light")
+    self.lightRadioButton.connect("toggled", self.on_button_toggled, "light")
+    self.darkRadioButton = Gtk.RadioButton.new_with_label_from_widget(self.lightRadioButton, "Dark")
+    self.darkRadioButton.connect("toggled", self.on_button_toggled, "dark")
     
-    saveButton = Gtk.Button(label="Save")
-    saveButton.connect("clicked", self.on_save_clicked)
-    exitButton = Gtk.Button(label="Exit")
-    exitButton.connect("clicked", self.on_exit_clicked)
+    self.saveButton = Gtk.Button(label="Save")
+    self.saveButton.connect("clicked", self.on_save_clicked)
+    self.exitButton = Gtk.Button(label="Exit")
+    self.exitButton.connect("clicked", self.on_exit_clicked)
     
-    grid.add(usernameLabel)
-    grid.attach_next_to(usernameEntry, usernameLabel, Gtk.PositionType.RIGHT, 2, 1)
-    grid.attach_next_to(passwordLabel, usernameLabel, Gtk.PositionType.BOTTOM, 1, 1)
-    grid.attach_next_to(passwordEntry, usernameEntry, Gtk.PositionType.BOTTOM, 2, 1)
-    grid.attach_next_to(themeLabel, passwordLabel, Gtk.PositionType.BOTTOM, 1, 1)
-    grid.attach_next_to(lightRadioButton, passwordEntry, Gtk.PositionType.BOTTOM, 1, 1)
-    grid.attach_next_to(darkRadioButton, lightRadioButton, Gtk.PositionType.RIGHT, 1, 1)
-    grid.attach_next_to(saveButton, lightRadioButton, Gtk.PositionType.BOTTOM, 1, 1)
-    grid.attach_next_to(exitButton, saveButton, Gtk.PositionType.RIGHT, 1, 1)
+    grid.add(self.usernameLabel)
+    grid.attach_next_to(self.usernameEntry, self.usernameLabel, Gtk.PositionType.RIGHT, 2, 1)
+    grid.attach_next_to(self.passwordLabel, self.usernameLabel, Gtk.PositionType.BOTTOM, 1, 1)
+    grid.attach_next_to(self.passwordEntry, self.usernameEntry, Gtk.PositionType.BOTTOM, 2, 1)
+    grid.attach_next_to(self.themeLabel, self.passwordLabel, Gtk.PositionType.BOTTOM, 1, 1)
+    grid.attach_next_to(self.lightRadioButton, self.passwordEntry, Gtk.PositionType.BOTTOM, 1, 1)
+    grid.attach_next_to(self.darkRadioButton, self.lightRadioButton, Gtk.PositionType.RIGHT, 1, 1)
+    grid.attach_next_to(self.saveButton, self.lightRadioButton, Gtk.PositionType.BOTTOM, 1, 1)
+    grid.attach_next_to(self.exitButton, self.saveButton, Gtk.PositionType.RIGHT, 1, 1)
+
+    self.themePreference = "light"
 
     self.add(grid)
 
   def on_button_toggled(self, button, name):
-    if button.get_active():
-      themePreference = "light"
-    else:
-      themePreference = "dark"
+    self.themePreference = name
 
   def on_save_clicked(self, widget):
-    print("Hello")
+    print self.usernameEntry.get_text()
+    print self.passwordEntry.get_text()
+    print self.themePreference
 
   def on_exit_clicked(self, widget):
-    self.main_quit()
+    Gtk.main_quit()
 
 
 def on_click_preferences(w):
