@@ -1,0 +1,161 @@
+#!/usr/bin/env python
+
+import gi.repository
+import mechanize
+import sys
+import socket
+import fcntl
+import struct
+import os
+gi.require_version('Gtk', '3.0')
+gi.require_version('AppIndicator3', '0.1')
+gi.require_version('Notify', '0.7')
+from gi.repository import Gtk
+from gi.repository import AppIndicator3 as appindicator
+from gi.repository import Notify
+
+def notify(appName, summary, body, icon):
+  Notify.init(appName)
+  notification = Notify.Notification.new(summary, body, icon)
+  notification.show()
+  Notify.uninit()
+
+def on_click_login(w, ind):
+  # Store your username & password in Credentials.txt in different lines
+  credentials = "Credentials.txt"
+
+  # instantiate mechanize browser
+  br = mechanize.Browser()
+  try:
+    br.open("https://internet.iitb.ac.in/index.php")
+  except Exception, e:
+    br.close()
+    notify("IITB Internet Login", "Error opening URL", str(e), "dialog-error")
+
+
+  # Check Authentication status
+  if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
+    # Read file: credentials & retrieve username and password
+    with open(credentials,'r') as infile:
+      username=infile.readline().strip()
+      password=infile.readline().strip()
+
+    # Authenticate @ internet.iitb.ac.in
+    br.select_form(name="auth")
+    br["uname"] = username
+    br["passwd"] = password
+    response = br.submit()  # submit current form
+    notify("IITB Internet Login", "Authenticated", "", "dialog-information")
+  # If already Authenticated then do nothing
+  else:
+    notify("IITB Internet Login", "Already Authenticated", "", "dialog-information")
+
+  # destroy instantiation of mechanize browser
+  br.close()
+
+def on_click_logout(w, ind):
+  # get IP of interface
+  def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+      s.fileno(),
+      0x8915,  # SIOCGIFADDR
+      struct.pack('256s', ifname[:15])
+    )[20:24])
+
+  # instantiate mechanize browser
+  br = mechanize.Browser()
+  try:
+  	br.open("https://internet.iitb.ac.in/index.php")
+  except Exception, e:
+  	br.close()
+  	notify("IITB Internet Login", "Error opening URL", str(e), "dialog-error")
+
+
+  # Exit if not Authenticated
+  if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
+    br.close()
+    notify("IITB Internet Login", "Not Authenticated", "", "dialog-error")
+
+  ip_list=[]
+  try:
+  	ethernet_ip = get_ip_address('eth0')
+  	ip_list.append(ethernet_ip)
+  except Exception,e:
+  	print "No Ethernet IP :"+ str(e)
+
+  try:
+  	wlan_ip = get_ip_address('wlan0')
+  	ip_list.append(wlan_ip)
+  except Exception,e:
+  	print "No Wifi IP :"+ str(e)
+
+
+  # Logout from those IPs
+  for ip in ip_list:
+    if(br.geturl() == "https://internet.iitb.ac.in/logout.php"):
+      try:
+        # ip = get_ip_address('eth0')
+        br.select_form(name="auth")
+        br.form["ip"] = [ip]
+        # print br.form
+        response = br.submit()  # submit current form
+        notify("IITB Internet Login", "Logout", ip, "dialog-error")
+      except Exception,e:
+        print "Error logging out | "+str(e)
+
+
+def on_click_preferences(w, ind):
+  ind.set_icon(os.path.abspath('.icons/connected-light.svg'))
+
+def on_click_exit(buf):
+  Gtk.main_quit()
+
+def getMenu(loginStatus):
+  menu = Gtk.Menu()
+
+  loginItem = Gtk.MenuItem("Login")
+  menu.append(loginItem)
+  loginItem.set_sensitive(loginStatus)
+  loginItem.show()
+  loginItem.connect("activate", on_click_login)
+
+  logoutItem= Gtk.MenuItem("Logout")
+  logoutItem.set_sensitive(1 - loginStatus)
+  menu.append(logoutItem)
+  logoutItem.show()
+  logoutItem.connect("activate", on_click_logout)
+
+  separatorItem = Gtk.SeparatorMenuItem()
+  menu.append(separatorItem)
+  separatorItem.show()
+
+  preferencesItem= Gtk.MenuItem("Preferences...")
+  menu.append(preferencesItem)
+  preferencesItem.show()
+  preferencesItem.connect("activate", on_click_preferences)
+
+  separatorItem = Gtk.SeparatorMenuItem()
+  menu.append(separatorItem)
+  separatorItem.show()
+
+  exitItem = Gtk.MenuItem("Exit")
+  menu.append(exitItem)
+  exitItem.show()
+  exitItem.connect("activate", on_click_exit)
+
+  return menu
+
+if __name__ == "__main__":
+  indicator = appindicator.Indicator.new (
+    "IITB Internet Login",
+    os.path.abspath('.icons/disconnected-light.svg'),
+    appindicator.IndicatorCategory.APPLICATION_STATUS)
+  indicator.set_status (appindicator.IndicatorStatus.ACTIVE)
+
+  # create a menu
+  menu = getMenu(loginStatus=0)
+
+  indicator.set_menu(menu)
+
+  Gtk.main()
