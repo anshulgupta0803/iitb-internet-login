@@ -7,6 +7,7 @@ import socket
 import fcntl
 import struct
 import os
+from json import load as jsonLoad
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
 gi.require_version('Notify', '0.7')
@@ -20,9 +21,21 @@ def notify(appName, summary, body, icon):
   notification.show()
   Notify.uninit()
 
-def on_click_login(w, ind):
+def get_login_status():
+  br = mechanize.Browser()
+  try:
+    br.open("https://internet.iitb.ac.in/index.php")
+  except Exception, e:
+    br.close()
+    notify("IITB Internet Login", "Error opening URL", str(e), "dialog-error")
+  if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
+    return True
+  else:
+    return False;
+
+def on_click_login(w, indicator):
   # Store your username & password in Credentials.txt in different lines
-  credentials = "Credentials.txt"
+  config = ".config"
 
   # instantiate mechanize browser
   br = mechanize.Browser()
@@ -36,24 +49,35 @@ def on_click_login(w, ind):
   # Check Authentication status
   if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
     # Read file: credentials & retrieve username and password
-    with open(credentials,'r') as infile:
-      username=infile.readline().strip()
-      password=infile.readline().strip()
+    with open(config,'r') as infile:
+      data = jsonLoad(infile)
+    username=data['username']
+    password=data['password']
+    infile.close()
 
     # Authenticate @ internet.iitb.ac.in
     br.select_form(name="auth")
     br["uname"] = username
     br["passwd"] = password
     response = br.submit()  # submit current form
-    notify("IITB Internet Login", "Authenticated", "", "dialog-information")
+    if (response.read().find("window.location.href='https://internet.iitb.ac.in/logout.php'") != -1):
+      notify("IITB Internet Login", "Authenticated", "", "dialog-information")
+      menu = getMenu(0, indicator)
+      indicator.set_menu(menu)
+      indicator.set_icon(os.path.abspath('.icons/connected-' + theme + '.svg'))
   # If already Authenticated then do nothing
+    else:
+      notify("IITB Internet Login", "Bad Username of Password", "", "dialog-error")
   else:
     notify("IITB Internet Login", "Already Authenticated", "", "dialog-information")
+    menu = getMenu(0, indicator)
+    indicator.set_menu(menu)
+    indicator.set_icon(os.path.abspath('.icons/connected-' + theme + '.svg'))
 
   # destroy instantiation of mechanize browser
   br.close()
 
-def on_click_logout(w, ind):
+def on_click_logout(w, indicator):
   # get IP of interface
   def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -76,19 +100,23 @@ def on_click_logout(w, ind):
   if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
     br.close()
     notify("IITB Internet Login", "Not Authenticated", "", "dialog-error")
+    menu = getMenu(1, indicator)
+    indicator.set_menu(menu)
+    indicator.set_icon(os.path.abspath('.icons/disconnected-' + theme + '.svg'))
+    return
 
   ip_list=[]
   try:
   	ethernet_ip = get_ip_address('eth0')
   	ip_list.append(ethernet_ip)
   except Exception,e:
-  	print "No Ethernet IP :"+ str(e)
+  	print "No Ethernet IP :" + str(e)
 
   try:
   	wlan_ip = get_ip_address('wlan0')
   	ip_list.append(wlan_ip)
   except Exception,e:
-  	print "No Wifi IP :"+ str(e)
+  	print "No Wifi IP :" + str(e)
 
 
   # Logout from those IPs
@@ -102,29 +130,84 @@ def on_click_logout(w, ind):
         response = br.submit()  # submit current form
         notify("IITB Internet Login", "Logout", ip, "dialog-error")
       except Exception,e:
-        print "Error logging out | "+str(e)
+        print "Error logging out | " + str(e)
+    menu = getMenu(1, indicator)
+    indicator.set_menu(menu)
+    indicator.set_icon(os.path.abspath('.icons/disconnected-' + theme + '.svg'))
 
 
-def on_click_preferences(w, ind):
-  ind.set_icon(os.path.abspath('.icons/connected-light.svg'))
+class Preferences(Gtk.Window):
+  def __init__(self):
+    Gtk.Window.__init__(self, title="Preferences")
+    self.set_border_width(10)
+
+    grid = Gtk.Grid()
+    
+    usernameLabel = Gtk.Label("Username")
+    passwordLabel = Gtk.Label("Password")
+    themeLabel = Gtk.Label("Theme")
+
+    usernameEntry = Gtk.Entry()
+    passwordEntry = Gtk.Entry()
+    
+    lightRadioButton = Gtk.RadioButton.new_with_label_from_widget(None, "Light")
+    lightRadioButton.connect("toggled", self.on_button_toggled, "light")
+    darkRadioButton = Gtk.RadioButton.new_with_label_from_widget(lightRadioButton, "Dark")
+    darkRadioButton.connect("toggled", self.on_button_toggled, "dark")
+    
+    saveButton = Gtk.Button(label="Save")
+    saveButton.connect("clicked", self.on_save_clicked)
+    exitButton = Gtk.Button(label="Exit")
+    exitButton.connect("clicked", self.on_exit_clicked)
+    
+    grid.add(usernameLabel)
+    grid.attach_next_to(usernameEntry, usernameLabel, Gtk.PositionType.RIGHT, 2, 1)
+    grid.attach_next_to(passwordLabel, usernameLabel, Gtk.PositionType.BOTTOM, 1, 1)
+    grid.attach_next_to(passwordEntry, usernameEntry, Gtk.PositionType.BOTTOM, 2, 1)
+    grid.attach_next_to(themeLabel, passwordLabel, Gtk.PositionType.BOTTOM, 1, 1)
+    grid.attach_next_to(lightRadioButton, passwordEntry, Gtk.PositionType.BOTTOM, 1, 1)
+    grid.attach_next_to(darkRadioButton, lightRadioButton, Gtk.PositionType.RIGHT, 1, 1)
+    grid.attach_next_to(saveButton, lightRadioButton, Gtk.PositionType.BOTTOM, 1, 1)
+    grid.attach_next_to(exitButton, saveButton, Gtk.PositionType.RIGHT, 1, 1)
+
+    self.add(grid)
+
+  def on_button_toggled(self, button, name):
+    if button.get_active():
+      themePreference = "light"
+    else:
+      themePreference = "dark"
+
+  def on_save_clicked(self, widget):
+    print("Hello")
+
+  def on_exit_clicked(self, widget):
+    self.main_quit()
+
+
+def on_click_preferences(w):
+  win = Preferences()
+  win.connect("delete-event", Gtk.main_quit)
+  win.show_all()
+  Gtk.main()
 
 def on_click_exit(buf):
   Gtk.main_quit()
 
-def getMenu(loginStatus):
+def getMenu(loginStatus, indicator):
   menu = Gtk.Menu()
 
   loginItem = Gtk.MenuItem("Login")
   menu.append(loginItem)
   loginItem.set_sensitive(loginStatus)
   loginItem.show()
-  loginItem.connect("activate", on_click_login)
+  loginItem.connect("activate", on_click_login, indicator)
 
   logoutItem= Gtk.MenuItem("Logout")
-  logoutItem.set_sensitive(1 - loginStatus)
+  logoutItem.set_sensitive(not loginStatus)
   menu.append(logoutItem)
   logoutItem.show()
-  logoutItem.connect("activate", on_click_logout)
+  logoutItem.connect("activate", on_click_logout, indicator)
 
   separatorItem = Gtk.SeparatorMenuItem()
   menu.append(separatorItem)
@@ -147,14 +230,31 @@ def getMenu(loginStatus):
   return menu
 
 if __name__ == "__main__":
+  config = '.config'
+  if(os.path.exists(config)):
+    with open(config, 'r') as infile:
+      data = jsonLoad(infile)
+    global theme
+    theme = data["theme"]
+  else:
+    pass
+
+
+  loginStatus = get_login_status()
+  pass
+  if(loginStatus == True):
+    icon='.icons/disconnected-' + theme + '.svg'
+  else:
+    icon='.icons/connected-' + theme + '.svg'
+
   indicator = appindicator.Indicator.new (
     "IITB Internet Login",
-    os.path.abspath('.icons/disconnected-light.svg'),
+    os.path.abspath(icon),
     appindicator.IndicatorCategory.APPLICATION_STATUS)
   indicator.set_status (appindicator.IndicatorStatus.ACTIVE)
 
   # create a menu
-  menu = getMenu(loginStatus=0)
+  menu = getMenu(loginStatus, indicator)
 
   indicator.set_menu(menu)
 
