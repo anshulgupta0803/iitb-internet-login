@@ -8,6 +8,7 @@ import fcntl
 import struct
 import os
 import json
+import netifaces
 gi.require_version('Gtk', '3.0')
 gi.require_version('AppIndicator3', '0.1')
 gi.require_version('Notify', '0.7')
@@ -105,18 +106,12 @@ def on_click_logout(w, indicator):
     return
 
   ip_list=[]
-  try:
-  	ethernet_ip = get_ip_address('eth0')
-  	ip_list.append(ethernet_ip)
-  except Exception,e:
-  	print "No Ethernet IP :" + str(e)
-
-  try:
-  	wlan_ip = get_ip_address('wlan0')
-  	ip_list.append(wlan_ip)
-  except Exception,e:
-  	print "No Wifi IP :" + str(e)
-
+  ifaces=netifaces.interfaces()
+  for interface in ifaces:
+    try:
+      ip_list.append(get_ip_address(interface))
+    except Exception,e:
+      print "No IP address on " + interface + ": " + str(e)
 
   # Logout from those IPs
   for ip in ip_list:
