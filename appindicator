@@ -26,7 +26,7 @@ def get_login_status():
   br = mechanize.Browser()
   try:
     br.open("https://internet.iitb.ac.in/index.php")
-  except Exception, e:
+  except Exception as e:
     br.close()
     notify("IITB Internet Login", "Error opening URL", str(e), "dialog-error")
   if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
@@ -41,7 +41,7 @@ def on_click_login(w, indicator):
   br = mechanize.Browser()
   try:
     br.open("https://internet.iitb.ac.in/index.php")
-  except Exception, e:
+  except Exception as e:
     br.close()
     notify("IITB Internet Login", "Error opening URL", str(e), "dialog-error")
 
@@ -91,7 +91,7 @@ def on_click_logout(w, indicator):
   br = mechanize.Browser()
   try:
   	br.open("https://internet.iitb.ac.in/index.php")
-  except Exception, e:
+  except Exception as e:
   	br.close()
   	notify("IITB Internet Login", "Error opening URL", str(e), "dialog-error")
 
@@ -110,8 +110,9 @@ def on_click_logout(w, indicator):
   for interface in ifaces:
     try:
       ip_list.append(get_ip_address(interface))
-    except Exception,e:
-      print "No IP address on " + interface + ": " + str(e)
+    except Exception as e:
+      pass
+#      print "No IP address on " + interface + ": " + str(e)
 
   # Logout from those IPs
   for ip in ip_list:
@@ -123,8 +124,9 @@ def on_click_logout(w, indicator):
         # print br.form
         response = br.submit()  # submit current form
         notify("IITB Internet Login", "Logout", ip, "dialog-error")
-      except Exception,e:
-        print "Error logging out | " + str(e)
+      except Exception as e:
+        pass
+#        print "Error logging out | " + str(e)
     menu = getMenu(1, indicator)
     indicator.set_menu(menu)
     indicator.set_icon(os.path.abspath('.icons/disconnected-' + theme + '.svg'))
@@ -237,7 +239,7 @@ if __name__ == "__main__":
         data = json.load(infile)
         global theme
         theme = data["theme"]
-      except ValueError, e:
+      except ValueError as e:
         win = Preferences()
         win.connect("delete-event", Gtk.main_quit)
         win.show_all()
@@ -248,11 +250,8 @@ if __name__ == "__main__":
     win.connect("delete-event", Gtk.main_quit)
     win.show_all()
     Gtk.main()
-    print "AAAA"
-
-    print "Anshul"
+    
   loginStatus = get_login_status()
-  print loginStatus
   if(loginStatus == True):
     icon='.icons/disconnected-' + theme + '.svg'
   else:
