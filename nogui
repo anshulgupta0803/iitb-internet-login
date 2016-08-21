@@ -1,0 +1,135 @@
+#!/usr/bin/env python
+
+import mechanize
+import sys
+import socket
+import fcntl
+import struct
+import os
+import json
+import netifaces
+
+def get_login_status():
+  br = mechanize.Browser()
+  try:
+    br.open("https://internet.iitb.ac.in/index.php")
+  except Exception as e:
+    br.close()
+    print str(e)
+  if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
+    return True
+  else:
+    return False;
+
+def on_click_login(w):
+  config = ".config"
+
+  # instantiate mechanize browser
+  br = mechanize.Browser()
+  try:
+    br.open("https://internet.iitb.ac.in/index.php")
+  except Exception as e:
+    br.close()
+    print str(e)
+
+  # Check Authentication status
+  if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
+    # Read file: credentials & retrieve username and password
+    with open(config,'r') as infile:
+      data = json.load(infile)
+    username=data['username']
+    password=data['password']
+    infile.close()
+
+    # Authenticate @ internet.iitb.ac.in
+    br.select_form(name="auth")
+    br["uname"] = username
+    br["passwd"] = password
+    response = br.submit()  # submit current form
+    if (response.read().find("window.location.href='https://internet.iitb.ac.in/logout.php'") != -1):
+      print "Authenticated"
+  # If already Authenticated then do nothing
+    else:
+      print "Bad Username of Password"
+  else:
+    print "Already Authenticated"
+
+  # destroy instantiation of mechanize browser
+  br.close()
+
+def on_click_logout(w):
+  # get IP of interface
+  def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+      s.fileno(),
+      0x8915,  # SIOCGIFADDR
+      struct.pack('256s', ifname[:15])
+    )[20:24])
+
+  # instantiate mechanize browser
+  br = mechanize.Browser()
+  try:
+  	br.open("https://internet.iitb.ac.in/index.php")
+  except Exception as e:
+  	br.close()
+  	print str(e)
+
+
+  # Exit if not Authenticated
+  if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
+    br.close()
+    print "Not Authenticated"
+    return
+
+  ip_list=[]
+  ifaces=netifaces.interfaces()
+  for interface in ifaces:
+    try:
+      ip_list.append(get_ip_address(interface))
+    except Exception as e:
+      pass
+#      print "No IP address on " + interface + ": " + str(e)
+
+  # Logout from those IPs
+  for ip in ip_list:
+    if(br.geturl() == "https://internet.iitb.ac.in/logout.php"):
+      try:
+        # ip = get_ip_address('eth0')
+        br.select_form(name="auth")
+        br.form["ip"] = [ip]
+        # print br.form
+        response = br.submit()  # submit current form
+        print "Logout: " + ip
+      except Exception as e:
+        pass
+#        print "Error logging out | " + str(e)
+
+
+if __name__ == "__main__":
+  config = '.config'
+  if(os.path.exists(config)):
+    with open(config, 'r') as infile:
+      try:
+        data = json.load(infile)
+      except ValueError as e:
+	print "Create .config file"
+  else:
+    print "Create .config file"
+  print "1. Login"
+  print "2. Logout"
+  print "3. Get Status"
+  print "4. Exit"
+
+  option=int(input("Option: "))
+  if (option == 1):
+    on_click_login(0)
+  elif (option == 2):
+    on_click_logout(0)
+  elif (option == 3):
+    if(get_login_status() == True):
+      print "Not Authenticated"
+    else:
+      print "Authenticated"
+  else:
+    exit(0)
