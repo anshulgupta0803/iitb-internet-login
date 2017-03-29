@@ -1,6 +1,18 @@
-# iitb-internet-login
+# IITB LDAP Login Appindicator
 App Indicator to login into internet.iitb.ac.in for Linux Systems
 
+## Dependencies
+- python-mechanize
+- python-netifaces
+```
+sudo apt install python-mechanize python-netifaces
+```
+OR
+```
+sudo -H pip install mechanize netifaces
+```
+
+## Running the application
 Start the indicator using ```./appindicator & ```
 
 It will check the login status and display the login indicator in the panel.
