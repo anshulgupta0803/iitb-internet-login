@@ -32,7 +32,7 @@ def get_login_status():
   if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
     return True
   else:
-    return False;
+    return False
 
 def on_click_login(w, indicator):
   config = ".config"
@@ -65,7 +65,7 @@ def on_click_login(w, indicator):
       menu = getMenu(0, indicator)
       indicator.set_menu(menu)
       indicator.set_icon(os.path.abspath('.icons/connected-' + theme + '.svg'))
-  # If already Authenticated then do nothing
+    # If already Authenticated then do nothing
     else:
       notify("IITB Internet Login", "Bad Username of Password", "", "dialog-error")
   else:
@@ -112,7 +112,7 @@ def on_click_logout(w, indicator):
       ip_list.append(get_ip_address(interface))
     except Exception as e:
       pass
-#      print "No IP address on " + interface + ": " + str(e)
+  # print "No IP address on " + interface + ": " + str(e)
 
   # Logout from those IPs
   for ip in ip_list:
@@ -126,7 +126,7 @@ def on_click_logout(w, indicator):
         notify("IITB Internet Login", "Logout", ip, "dialog-error")
       except Exception as e:
         pass
-#        print "Error logging out | " + str(e)
+    # print "Error logging out | " + str(e)
     menu = getMenu(1, indicator)
     indicator.set_menu(menu)
     indicator.set_icon(os.path.abspath('.icons/disconnected-' + theme + '.svg'))
@@ -138,7 +138,7 @@ class Preferences(Gtk.Window):
     self.set_border_width(10)
 
     grid = Gtk.Grid()
-    
+
     self.usernameLabel = Gtk.Label("Username")
     self.passwordLabel = Gtk.Label("Password")
     self.themeLabel = Gtk.Label("Theme")
@@ -146,17 +146,17 @@ class Preferences(Gtk.Window):
     self.usernameEntry = Gtk.Entry()
     self.passwordEntry = Gtk.Entry()
     self.passwordEntry.set_visibility(False)
-    
+
     self.lightRadioButton = Gtk.RadioButton.new_with_label_from_widget(None, "Light")
     self.lightRadioButton.connect("toggled", self.on_button_toggled, "light")
     self.darkRadioButton = Gtk.RadioButton.new_with_label_from_widget(self.lightRadioButton, "Dark")
     self.darkRadioButton.connect("toggled", self.on_button_toggled, "dark")
-    
+
     self.saveButton = Gtk.Button(label="Save")
     self.saveButton.connect("clicked", self.on_save_clicked)
     self.exitButton = Gtk.Button(label="Exit")
     self.exitButton.connect("clicked", self.on_exit_clicked)
-    
+
     grid.add(self.usernameLabel)
     grid.attach_next_to(self.usernameEntry, self.usernameLabel, Gtk.PositionType.RIGHT, 2, 1)
     grid.attach_next_to(self.passwordLabel, self.usernameLabel, Gtk.PositionType.BOTTOM, 1, 1)
@@ -245,12 +245,12 @@ if __name__ == "__main__":
         win.show_all()
         Gtk.main()
   else:
-    #on_click_preferences(0)
+    # on_click_preferences(0)
     win = Preferences()
     win.connect("delete-event", Gtk.main_quit)
     win.show_all()
     Gtk.main()
-    
+
   loginStatus = get_login_status()
   if(loginStatus == True):
     icon='.icons/disconnected-' + theme + '.svg'

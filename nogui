@@ -19,7 +19,7 @@ def get_login_status():
   if(br.geturl() == "https://internet.iitb.ac.in/index.php"):
     return True
   else:
-    return False;
+    return False
 
 def on_click_login(w):
   config = ".config"
@@ -48,7 +48,7 @@ def on_click_login(w):
     response = br.submit()  # submit current form
     if (response.read().find("window.location.href='https://internet.iitb.ac.in/logout.php'") != -1):
       print "Authenticated"
-  # If already Authenticated then do nothing
+    # If already Authenticated then do nothing
     else:
       print "Bad Username of Password"
   else:
@@ -89,7 +89,7 @@ def on_click_logout(w):
       ip_list.append(get_ip_address(interface))
     except Exception as e:
       pass
-#      print "No IP address on " + interface + ": " + str(e)
+  # print "No IP address on " + interface + ": " + str(e)
 
   # Logout from those IPs
   for ip in ip_list:
@@ -103,7 +103,7 @@ def on_click_logout(w):
         print "Logout: " + ip
       except Exception as e:
         pass
-#        print "Error logging out | " + str(e)
+  # print "Error logging out | " + str(e)
 
 
 if __name__ == "__main__":
